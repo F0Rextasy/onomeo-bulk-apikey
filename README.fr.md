@@ -35,13 +35,13 @@
 
 ## ✨ Pourquoi cet outil existe
 
-Onomeo est un agrégateur compatible OpenAI : `https://onomeo.com/v1`, 28 identifiants de modèles, `Authorization: Bearer sk-onomeo-…`. L'inscription se fait par **code e-mail** — aucun mot de passe à choisir, aucune carte — et la clé API *est* ce que l'appel de vérification renvoie. Le seul obstacle sur le chemin est un widget Cloudflare Turnstile, c'est pourquoi cet outil prend un jeton résolu (`--token-cmd` ou `--manual`) puis fait le reste tout seul : nouvelle boîte de réception → code → clé → preuve de chat en direct.
+Onomeo est un agrégateur compatible OpenAI : `https://onomeo.com/v1`, 28 identifiants de modèles, `Authorization: Bearer sk-onomeo-…`. L'inscription se fait par **code e-mail** — aucun mot de passe à choisir, aucune carte — et la clé API *est* ce que renvoie l'appel de vérification. Le seul obstacle sur le chemin est un widget Cloudflare Turnstile, c'est pourquoi cet outil prend un jeton résolu (`--token-cmd` ou `--manual`) puis fait le reste tout seul : boîte de réception neuve → code → clé → preuve de chat en direct.
 
 ## 🎁 Offre gratuite — ce que vous obtenez
 
 **Chaque nouveau compte reçoit sa propre allocation gratuite** — sans carte.
 
-| Quoi | Valeur (d'après le `GET /api/info` public, mesuré le 2026-10-21) |
+| Élément | Valeur (d'après le `GET /api/info` public, mesuré le 2026-10-21) |
 | --- | --- |
 | Modèles gratuits | **13** (listés ci-dessus) |
 | Appels par compte | **30 / 5 h** |
@@ -50,11 +50,11 @@ Onomeo est un agrégateur compatible OpenAI : `https://onomeo.com/v1`, 28 identi
 | Comptes par IP et par jour | **3** (`accountsPerIpPerDay`) |
 | Récompense d'invitation | **45 appels / 7 jours** |
 | BYOK | pris en charge (apportez votre propre clé amont) |
-| L'unité qui s'adapte | **un compte = une clé** → `--count N` signifie « N comptes gratuits » |
+| L'unité qui évolue | **un compte = une clé** → `--count N` signifie « N comptes gratuits » |
 
-Le plafond par compte explique pourquoi le rail conserve **un compte par clé** et pourquoi un pool de proxys est utile : le panneau compte les inscriptions par adresse.
+Le plafond par compte est la raison pour laquelle le rail maintient **un compte par clé** et pourquoi un pool de proxys est utile : le panneau compte les inscriptions par adresse.
 
-> 💡 L'offre gratuite est définie par Onomeo et peut changer. Consultez les chiffres en direct sur [onomeo.com](https://onomeo.com) — et laissez le propre contrôle de l'outil décider :
+> 💡 L'offre gratuite est définie par Onomeo et peut changer. Consultez les chiffres en direct sur [onomeo.com](https://onomeo.com) — et laissez la propre barrière de l'outil décider :
 
 ```bash
 node src/cli.js --verify-only     # every key in keys.txt is re-tested with a real chat call
@@ -62,7 +62,7 @@ node src/cli.js --verify-only     # every key in keys.txt is re-tested with a re
 
 ## 🤖 Modèles — les 28 au complet
 
-Le catalogue compte **28 identifiants**. Le point de terminaison sert à la fois les modèles gratuits et ceux financés par le compte ; ceux que ce rail a prouvés avec une réponse *vérifiable* (pas seulement un 200) sont listés ci-dessus et dans `src/cli.js` comme sondes de contrôle :
+Le catalogue compte **28 identifiants**. Le point d'accès sert à la fois les modèles gratuits et ceux financés par le compte ; ceux que ce rail a prouvés avec une réponse *vérifiable* (pas seulement un 200) sont listés ci-dessus et dans `src/cli.js` comme sondes de la barrière :
 
 | Identifiant du modèle | Preuve |
 | --- | --- |
@@ -76,7 +76,7 @@ L'offre gratuite du panneau expose 13 des identifiants (`/api/info`) : `auto`, `
 
 ## 🧪 Comment utiliser l'API
 
-L'URL de base est **`https://onomeo.com/v1`** — compatible OpenAI. Chaque requête nécessite l'en-tête du site **`x-onomeo-web: 1`** à côté du jeton bearer ; sans lui, le point de terminaison répond comme un client anonyme.
+L'URL de base est **`https://onomeo.com/v1`** — compatible OpenAI. Chaque requête nécessite l'en-tête du site **`x-onomeo-web: 1`** à côté du jeton bearer ; sans lui, le point d'accès répond comme un client anonyme.
 
 ```bash
 curl https://onomeo.com/v1/chat/completions \
@@ -118,13 +118,13 @@ node src/cli.js --count 1 --manual         # paste one token by hand
 node src/cli.js --verify-only              # re-check keys.txt
 ```
 
-`keys.txt` n'est écrit **qu'** après un `chat-200` en direct plus les deux sondes de contenu qui prouvent la clé.
+`keys.txt` n'est écrit **qu'**après un `chat-200` en direct plus les deux sondes de contenu qui prouvent la clé.
 
 ### 🖱️ Le lanceur
 
 Le lanceur demande la liste de proxys (facultative — sans elle, le CLI se connecte directement), le nombre, le modèle de vérification et le jeton Mailtrap, les mémorise dans `launcher.config.json`, et exécute le CLI — création, vérification, test des sorties, paramètres, aide, Connect to 9Router.
 
-Il ne peut pas deviner le jeton Turnstile, donc une création lancée depuis le lanceur nécessite toujours que `--token-cmd` (ou `--manual`) soit transmis au CLI.
+Il ne peut pas deviner le jeton Turnstile, donc une création lancée depuis le lanceur a toujours besoin de `--token-cmd` (ou `--manual`) transmis au CLI.
 
 ## ✅ Vérifié fonctionnel — chaque clé est testée
 
@@ -132,19 +132,19 @@ Il ne peut pas deviner le jeton Turnstile, donc une création lancée depuis le 
 | --- | --- |
 | `GET /api/info` (en-tête `x-onomeo-web: 1`) | **200** — configuration publique : 13 modèles gratuits, 30 appels/compte/5h, 60/réseau/5h, 12/min par clé, `accountsPerIpPerDay: 3` |
 | `POST /api/auth/email/code {email,lang:"en",turnstile:<token>}` | **200** `{"sent":true,"delivered":true,"minutes":10}` — avec un vrai jeton provenant de la même sortie |
-| mail | `onomeo verification code: 617076` dans la boîte de réception créée par l'exécution |
+| courrier | `onomeo verification code: 617076` dans la boîte de réception créée par l'exécution |
 | `POST /api/auth/email/verify {email,code}` | **200** `{"secret":"sk-onomeo-…","fresh":true}` — `.secret` **est** la clé API |
 | `GET /v1/models` (Bearer + `x-onomeo-web: 1`) | **200** — catalogue de 28 identifiants |
 | `POST /v1/chat/completions` — exécuté pour **chaque** clé avant son écriture | **200** avec la réponse attendue (`51`, `Au`) |
 | appel d'outil (`auto`) | **200** — `get_time` présent dans la réponse |
 | une clé qui échoue à ses sondes | jamais écrite dans `keys.txt` — le compte reste récupérable dans `accounts.json` |
 
-Trois clés créées le 2026-10-21 ont été revérifiées en direct plus tard le même jour (`/v1/models` 200 + chat 200).
+Trois clés créées le 2026-10-21 ont été re-vérifiées en direct plus tard le même jour (`/v1/models` 200 + chat 200).
 
-> **Contrôles de qualité.** Chaque clé ici a passé un `chat-200` en direct avant d'être écrite dans `keys.txt`
-> (les clés mortes ne sont jamais livrées). Les combinaisons de routeur suivent la même règle au niveau du modèle : une entrée est
-> ajoutée **uniquement si le modèle répond `chat-200` et peut appeler des outils** — un modèle sans prise en charge des outils,
-> une clé morte ou un fournisseur mort est écarté plutôt qu'ajouté. Relancez l'étape de vérification à tout moment ;
+> **Barrières de qualité.** Chaque clé ici a passé un `chat-200` en direct avant d'être écrite dans `keys.txt`
+> (les clés mortes ne sont jamais livrées). Les combinaisons de routeur suivent la même règle au niveau du modèle : une entrée n'est
+> ajoutée **que si le modèle répond `chat-200` et peut appeler des outils** — un modèle sans prise en charge des outils,
+> une clé morte ou un fournisseur mort est écarté au lieu d'être ajouté. Relancez l'étape de vérification à tout moment ;
 > les échecs sont signalés, jamais masqués.
 
 ## 🧭 Comment ça marche
@@ -160,12 +160,12 @@ inbox (one address per account)                                  a fresh address
 
 | Étape | Appel | Remarques |
 | --- | --- | --- |
-| boîte mail | Mailtrap `POST /inbound/folders/{id}/inboxes` | une nouvelle adresse `…@inbound-mailtrap.io` par compte |
-| turnstile | Widget Cloudflare, sitekey `0x4AAAAAADhgHpmYKLCUCGVk` | résolu **sur la même sortie** que celle qui dépense le jeton ; `--token-cmd`, un `--token` capturé, ou `--manual` |
+| boîte aux lettres | Mailtrap `POST /inbound/folders/{id}/inboxes` | une adresse `…@inbound-mailtrap.io` neuve par compte |
+| turnstile | widget Cloudflare, sitekey `0x4AAAAAADhgHpmYKLCUCGVk` | résolu **sur la même sortie** qui dépense le jeton ; `--token-cmd`, un `--token` capturé, ou `--manual` |
 | code | `POST /api/auth/email/code {email,lang,turnstile}` | un jeton que cette sortie n'a pas résolu est refusé (`delivered` ne devient jamais vrai) |
-| mail | interroger la même boîte de réception | `onomeo verification code: <6 digits>` |
-| verify | `POST /api/auth/email/verify {email,code}` | **`.secret` est la clé API** ; réessayé sur d'autres sorties quand une sortie meurt en cours de flux |
-| check | `GET /v1/models` + 2 sondes de contenu | un `chat-200` en direct avec la bonne réponse est requis avant `keys.txt` |
+| courrier | interroger la même boîte de réception | `onomeo verification code: <6 digits>` |
+| vérification | `POST /api/auth/email/verify {email,code}` | **`.secret` est la clé API** ; réessayé sur d'autres sorties quand une sortie meurt en cours de flux |
+| contrôle | `GET /v1/models` + 2 sondes de contenu | un `chat-200` en direct avec la bonne réponse est requis avant `keys.txt` |
 
 ## ⚙️ Options du CLI
 
@@ -181,8 +181,8 @@ node src/cli.js --help
 | --- | --- | --- |
 | `ONOMEO_PROXIES` | `proxies.txt` | pool de sorties, une ligne par proxy — facultatif : sans pool, le CLI se connecte directement |
 | `ONOMEO_MAILTRAP_TOKEN` | — | votre jeton API Mailtrap (Settings → API Tokens) ; le rail de boîte de réception |
-| `ONOMEO_MODEL` | `deepseek-v4-flash` | modèle pour le contrôle de chat |
-| `ONOMEO_TURNSTILE` | — | un jeton Turnstile capturé (identique à `--token` ; un seul compte) — pratique quand le lanceur exécute la création |
+| `ONOMEO_MODEL` | `deepseek-v4-flash` | modèle pour la barrière de chat |
+| `ONOMEO_TURNSTILE` | — | un jeton Turnstile capturé (identique à `--token` ; un compte) — pratique quand le lanceur exécute la création |
 | `ONOMEO_SITEKEY` / `ONOMEO_URL` | sitekey / `/login` | exportés *vers* `--token-cmd`, pour qu'un solveur sache quoi résoudre |
 
 | Option | Signification |
@@ -194,19 +194,19 @@ node src/cli.js --help
 | `--manual` | coller le jeton lorsqu'il est demandé |
 | `--mailtrap-token <t>` | jeton API Mailtrap |
 | `--mt-folder <name>` | dossier Mailtrap pour les boîtes de réception (défaut `onomeo`) |
-| `--model <id>` | modèle pour le contrôle de chat |
+| `--model <id>` | modèle pour la barrière de chat |
 | `--tries N` | tentatives par compte, une sortie chacune (défaut 2) |
-| `--verify-only` · `--screen` · `--help` | revérifier · tester les sorties · ce texte |
+| `--verify-only` · `--screen` · `--help` | re-vérifier · tester les sorties · ce texte |
 
 ## 🛰️ Derrière un proxy
 
 **Facultatif — recommandé à grande échelle (la limite d'inscription est par IP : 3 comptes/jour).** L'outil fonctionne aussi sans proxy.
 
 - **Avec un pool :** passez `--pool <file>` (ou définissez `ONOMEO_PROXIES`) et chaque requête passe par une sortie de cette liste ; le rail fait tourner une sortie par compte et réessaie une sortie mourante sur ses voisines. Une ligne morte fait échouer cette tentative — un pool fourni ne retombe jamais sur votre propre adresse.
-- **Sans pool :** le CLI affiche `running WITHOUT a proxy (direct)` et se connecte directement. L'inscription, la création de clé et le contrôle de chat sont inchangés — seul le point de départ des paquets change.
+- **Sans pool :** le CLI affiche `running WITHOUT a proxy (direct)` et se connecte directement. L'inscription, la création de clé et la barrière de chat sont inchangées — seul le point de départ des paquets change.
 - `--screen` teste les sorties dont vous disposez contre `https://onomeo.com/api/info` avant une exécution.
 
-> **Blocage à grande échelle (mesuré les 2026-10-21/22, documenté honnêtement).** Le widget Cloudflare Turnstile n'a été résolu que sur une **petite fraction des sorties** dont disposait la flotte : dans l'exécution à l'échelle de 3 clés, **2 des 11 sorties joignables** ont produit un jeton (et **1 sur 28** lors de la première passe de test), tandis que toutes les autres sorties joignables renvoyaient un jeton de **longueur nulle** (trames keep-alive `food` de la page de défi) et l'inscription ne pouvait alors pas se poursuivre. La résolution et la dépense doivent aussi se produire sur la **même** sortie — un jeton résolu ailleurs est refusé. Ce dépôt est donc un **outil de création fonctionnel, pas une flotte de clés finie** : avec un solveur qui bat Turnstile sur vos sorties (ou un jeton collé à la main), il crée et vérifie les clés de bout en bout ; sans cela, il s'arrête à l'étape du code et le dit. Les clés actives existantes sont revérifiables à tout moment avec `--verify-only`.
+> **Blocage à grande échelle (mesuré les 2026-10-21/22, documenté honnêtement).** Le widget Cloudflare Turnstile ne s'est résolu que sur une **petite fraction des sorties** dont disposait la flotte : dans l'exécution à l'échelle de 3 clés, **2 sorties sur 11 joignables** ont produit un jeton (et **1 sur 28** lors de la première passe de test), tandis que toutes les autres sorties joignables renvoyaient un jeton de **longueur nulle** (trames keep-alive `food` de la page de défi) et l'inscription ne pouvait alors pas se poursuivre. La résolution et la dépense doivent aussi se produire sur la **même** sortie — un jeton résolu ailleurs est refusé. Ce dépôt est donc un **outil de création fonctionnel, pas une flotte de clés finie** : avec un solveur qui bat Turnstile sur vos sorties (ou un jeton collé à la main), il crée et vérifie les clés de bout en bout ; sans cela, il s'arrête à l'étape du code et le dit. Les clés actives existantes sont re-vérifiables à tout moment avec `--verify-only`.
 
 ## 📄 Fichiers
 
@@ -218,7 +218,7 @@ node src/cli.js --help
 
 ## 🔌 Connexion à 9Router
 
-[9Router](https://9router.com) est un routeur auto-hébergé compatible OpenAI :
+[9Router](https://9router.com) est un routeur auto-hébergé, compatible OpenAI :
 
 ```bash
 node src/connect-9router.js --base http://localhost:20128 --password 123456
@@ -228,7 +228,7 @@ Défauts : `--prefix onomeo`, `--base-url https://onomeo.com/v1`, `--model deeps
 
 ## 🔌 Connexion à OmniRoute
 
-[OmniRoute](https://omniroute.online) est un routeur auto-hébergé compatible OpenAI :
+[OmniRoute](https://omniroute.online) est un routeur auto-hébergé, compatible OpenAI :
 
 ```bash
 node src/connect-omniroute.js --base http://localhost:20128 --password 123456
@@ -236,19 +236,19 @@ node src/connect-omniroute.js --base http://localhost:20128 --password 123456
 
 Défauts : `--prefix onomeo`, `--base-url https://onomeo.com/v1`, `--model deepseek-v4-flash`. Les modèles sont servis sous `onomeo/<model id>` et répartis en charge sur chaque clé de `keys.txt`.
 
-## 🔑 Ce qu'une clé vous donne
+## 🔑 Ce qu'une clé vous apporte
 
 | | |
 | --- | --- |
 | 🏢 Fournisseur | **Onomeo** — [onomeo.com](https://onomeo.com) |
 | 🎁 Ce que le fournisseur donne | un compte par clé — code e-mail derrière Turnstile, chaque clé vérifiée par chat |
-| 🔑 Ce qu'une clé vous donne | une clé API limitée à son propre compte : les 28 identifiants de modèles sur le point de terminaison ci-dessous, selon les limites de votre offre. Le quota est rattaché au **compte**, ce qui explique précisément pourquoi cet outil crée un compte par clé |
+| 🔑 Ce qu'une clé vous apporte | une clé API limitée à son propre compte : les 28 identifiants de modèles sur le point d'accès ci-dessous, aux limites de votre offre. Le quota vit sur le **compte**, ce qui explique précisément pourquoi cet outil crée un compte par clé |
 | 🌐 Forme de l'API | compatible OpenAI : `POST https://onomeo.com/v1/chat/completions` |
 | 🔒 Vos données | seuls onomeo.com et le backend de boîte de réception que vous configurez sont contactés ; les clés restent sur votre machine |
 
 ## 🐞 Problèmes
 
-Si Onomeo modifie son inscription par e-mail, sa sitekey Turnstile, l'en-tête `x-onomeo-web` ou les limites de `/api/info`, l'outil s'arrête à cette étape et le signale. **[Ouvrez un ticket](../../issues)** avec la commande exécutée et la sortie exacte ; les PR sont bienvenues.
+Si Onomeo modifie son inscription par e-mail, sa sitekey Turnstile, l'en-tête `x-onomeo-web` ou les limites de `/api/info`, l'outil s'arrête à cette étape et le dit. **[Ouvrez un ticket](../../issues)** avec la commande que vous avez exécutée et la sortie exacte ; les PR sont bienvenues.
 
 ## 📄 Licence
 
