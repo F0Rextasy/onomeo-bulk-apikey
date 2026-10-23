@@ -31,7 +31,6 @@
 
 </div>
 
-
 ---
 
 ## ✨ Зачем это нужно
@@ -101,6 +100,7 @@ print(c.chat.completions.create(model="deepseek-v4-flash",
 ## 🛠 Быстрый старт
 
 ```bash
+
 # clone or fork this repository, then:
 cd onomeo-bulk-apikey
 

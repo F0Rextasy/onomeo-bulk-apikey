@@ -35,11 +35,11 @@
 
 ## ✨ Por que isto existe
 
-Onomeo é um agregador compatível com OpenAI: `https://onomeo.com/v1`, 28 ids de modelos, `Authorization: Bearer sk-onomeo-…`. O cadastro é por **código de e-mail** — sem senha para escolher, sem cartão — e a chave de API *é* o que a chamada de verificação devolve. A única barreira no caminho é um widget Cloudflare Turnstile, e é por isso que esta ferramenta recebe um token já resolvido (`--token-cmd` ou `--manual`) e então faz o resto sozinha: caixa de entrada nova → código → chave → prova de chat ao vivo.
+Onomeo é um agregador compatível com OpenAI: `https://onomeo.com/v1`, 28 ids de modelos, `Authorization: Bearer sk-onomeo-…`. O cadastro é por **código de e-mail** — sem senha para escolher, sem cartão — e a chave de API *é* o que a chamada de verificação devolve. O único obstáculo no caminho é um widget Cloudflare Turnstile, e é por isso que esta ferramenta recebe um token já resolvido (`--token-cmd` ou `--manual`) e então faz o resto sozinha: caixa de entrada nova → código → chave → prova de chat ao vivo.
 
 ## 🎁 Plano gratuito — quanto você recebe
 
-**Toda nova conta ganha sua própria cota gratuita** — sem cartão.
+**Cada nova conta recebe sua própria cota gratuita** — sem cartão.
 
 | O quê | Valor (do `GET /api/info` público, medido em 2026-10-21) |
 | --- | --- |
@@ -52,7 +52,7 @@ Onomeo é um agregador compatível com OpenAI: `https://onomeo.com/v1`, 28 ids d
 | BYOK | suportado (traga sua própria chave de upstream) |
 | A unidade que escala | **uma conta = uma chave** → `--count N` é "N contas gratuitas" |
 
-O limite por conta é o motivo pelo qual o rail mantém **uma conta por chave** e por que um pool de proxies compensa: o painel conta os cadastros por endereço.
+O limite por conta é o motivo pelo qual o rail mantém **uma conta por chave** e pelo qual um pool de proxies compensa: o painel conta cadastros por endereço.
 
 > 💡 O plano gratuito é definido pela Onomeo e pode mudar. Confira os números ao vivo em [onomeo.com](https://onomeo.com) — e deixe o próprio gate da ferramenta decidir:
 
@@ -62,12 +62,12 @@ node src/cli.js --verify-only     # every key in keys.txt is re-tested with a re
 
 ## 🤖 Modelos — todos os 28
 
-O catálogo tem **28 ids**. O endpoint serve tanto modelos gratuitos quanto financiados pela conta; os que este rail comprovou com uma resposta *verificável* (não apenas um 200) estão listados acima e em `src/cli.js` como as sondagens do gate:
+O catálogo tem **28 ids**. O endpoint serve tanto modelos gratuitos quanto modelos custeados pela conta; os que este rail comprovou com uma resposta *verificável* (não apenas um 200) estão listados acima e em `src/cli.js` como as sondagens do gate:
 
 | ID do modelo | Prova |
 | --- | --- |
-| `deepseek-v4-flash` | **200** + verificação de resposta (`17 * 3` → `51`), em toda chave que o rail cunhou |
-| `glm-5.2` | **200** + verificação de resposta (ouro → `Au`), em toda chave que o rail cunhou |
+| `deepseek-v4-flash` | **200** + verificação de resposta (`17 * 3` → `51`), em cada chave que o rail cunhou |
+| `glm-5.2` | **200** + verificação de resposta (ouro → `Au`), em cada chave que o rail cunhou |
 | `auto` | **200** + chamada de ferramenta (`get_time` presente na resposta), medido nas mesmas chaves |
 
 O plano gratuito do painel expõe 13 dos ids (`/api/info`): `auto`, `deepseek-v4-flash`, `glm-5.2`, `gemini-3.5-flash-lite`, `gpt-oss-20b`, `muse-glimmer-30b`, `glm-5.3-flash`, `codestral-latest`, `ministral-14b-latest`, `hy4-preview`, `stealth/glyph-cluster`, `glm-4.5-flash`, `glm-4.6v-flash`.
@@ -122,30 +122,30 @@ node src/cli.js --verify-only              # re-check keys.txt
 
 ### 🖱️ O launcher
 
-O launcher pede a lista de proxies (opcional — sem ela a CLI roda direto), a contagem, o modelo de verificação e o token do Mailtrap, memoriza-os em `launcher.config.json` e executa a CLI — cunhar, verificar, triagem de saídas, configurações, ajuda, Connect to 9Router.
+O launcher pede a lista de proxies (opcional — sem uma, a CLI roda direto), a contagem, o modelo de verificação e o token do Mailtrap, memoriza-os em `launcher.config.json` e executa a CLI — cunhar, verificar, triagem de saídas, configurações, ajuda, Connect to 9Router.
 
-Ele não consegue adivinhar o token Turnstile, então uma cunhagem iniciada pelo launcher ainda precisa de `--token-cmd` (ou `--manual`) repassado à CLI.
+Ele não consegue adivinhar o token Turnstile, então uma cunhagem iniciada pelo launcher ainda precisa de `--token-cmd` (ou `--manual`) repassado para a CLI.
 
 ## ✅ Verificado e funcionando — toda chave é testada
 
 | Verificação | Resultado |
 | --- | --- |
-| `GET /api/info` (cabeçalho `x-onomeo-web: 1`) | **200** — config pública: 13 modelos gratuitos, 30 chamadas/conta/5h, 60/rede/5h, 12/min por chave, `accountsPerIpPerDay: 3` |
+| `GET /api/info` (cabeçalho `x-onomeo-web: 1`) | **200** — configuração pública: 13 modelos gratuitos, 30 chamadas/conta/5h, 60/rede/5h, 12/min por chave, `accountsPerIpPerDay: 3` |
 | `POST /api/auth/email/code {email,lang:"en",turnstile:<token>}` | **200** `{"sent":true,"delivered":true,"minutes":10}` — com um token real da mesma saída |
 | e-mail | `onomeo verification code: 617076` na caixa de entrada que a execução criou |
 | `POST /api/auth/email/verify {email,code}` | **200** `{"secret":"sk-onomeo-…","fresh":true}` — `.secret` **é** a chave de API |
 | `GET /v1/models` (Bearer + `x-onomeo-web: 1`) | **200** — catálogo de 28 ids |
-| `POST /v1/chat/completions` — executado para **toda** chave antes de ser escrita | **200** com a resposta esperada (`51`, `Au`) |
+| `POST /v1/chat/completions` — executado para **cada** chave antes de ser escrita | **200** com a resposta esperada (`51`, `Au`) |
 | chamada de ferramenta (`auto`) | **200** — `get_time` presente na resposta |
-| uma chave que falha nas sondagens | nunca escrita em `keys.txt` — a conta permanece recuperável em `accounts.json` |
+| uma chave que falha nas sondagens | nunca é escrita em `keys.txt` — a conta permanece recuperável em `accounts.json` |
 
 Três chaves cunhadas em 2026-10-21 foram re-verificadas ao vivo mais tarde no mesmo dia (`/v1/models` 200 + chat 200).
 
-> **Gates de qualidade.** Toda chave aqui passou por um `chat-200` ao vivo antes de ser escrita em `keys.txt`
+> **Portões de qualidade.** Toda chave aqui passou por um `chat-200` ao vivo antes de ser escrita em `keys.txt`
 > (chaves mortas nunca são entregues). As combinações de roteador seguem a mesma regra no nível do modelo: uma entrada é
-> adicionada **somente se o modelo responder `chat-200` e puder chamar ferramentas** — um modelo sem suporte a ferramentas,
+> adicionada **somente se o modelo responder `chat-200` e conseguir chamar ferramentas** — um modelo sem suporte a ferramentas,
 > uma chave morta ou um provedor morto é descartado em vez de adicionado. Reexecute a etapa de verificação a qualquer momento;
-> falhas são reportadas, nunca escondidas.
+> as falhas são reportadas, nunca escondidas.
 
 ## 🧭 Como funciona
 
@@ -161,11 +161,11 @@ inbox (one address per account)                                  a fresh address
 | Etapa | Chamada | Notas |
 | --- | --- | --- |
 | caixa de correio | Mailtrap `POST /inbound/folders/{id}/inboxes` | um endereço novo `…@inbound-mailtrap.io` por conta |
-| turnstile | widget Cloudflare, sitekey `0x4AAAAAADhgHpmYKLCUCGVk` | resolvido **na mesma saída** que gasta o token; `--token-cmd`, um `--token` capturado, ou `--manual` |
+| turnstile | widget Cloudflare, sitekey `0x4AAAAAADhgHpmYKLCUCGVk` | resolvido **na mesma saída** que gasta o token; `--token-cmd`, um `--token` capturado ou `--manual` |
 | código | `POST /api/auth/email/code {email,lang,turnstile}` | um token que esta saída não resolveu é recusado (`delivered` nunca se torna true) |
 | e-mail | consultar a mesma caixa de entrada | `onomeo verification code: <6 digits>` |
 | verificar | `POST /api/auth/email/verify {email,code}` | **`.secret` é a chave de API**; repetido em outras saídas quando uma saída morre no meio do fluxo |
-| checar | `GET /v1/models` + 2 sondagens de conteúdo | um `chat-200` ao vivo com a resposta correta é exigido antes de `keys.txt` |
+| verificação | `GET /v1/models` + 2 sondagens de conteúdo | um `chat-200` ao vivo com a resposta correta é exigido antes de `keys.txt` |
 
 ## ⚙️ Opções da CLI
 
@@ -190,7 +190,7 @@ node src/cli.js --help
 | `--count N` | contas/chaves a cunhar (padrão 1) |
 | `--pool <file>` | lista de proxies, uma saída por linha |
 | `--token <tok>` | um token Turnstile capturado — **conta única**, o token é gasto uma vez |
-| `--token-cmd <cmd>` | comando que imprime um token novo no stdout (`--count` > 1 exige isto) |
+| `--token-cmd <cmd>` | comando que imprime um token novo em stdout (`--count` > 1 exige isto) |
 | `--manual` | colar o token quando solicitado |
 | `--mailtrap-token <t>` | token de API do Mailtrap |
 | `--mt-folder <name>` | pasta do Mailtrap para as caixas de entrada (padrão `onomeo`) |
@@ -202,7 +202,7 @@ node src/cli.js --help
 
 **Opcional — recomendado em escala (o limite de cadastro é por IP: 3 contas/dia).** A ferramenta funciona sem proxy também.
 
-- **Com um pool:** passe `--pool <file>` (ou defina `ONOMEO_PROXIES`) e toda requisição passa por uma saída dessa lista; o rail rotaciona uma saída por conta e tenta novamente uma saída que está morrendo em suas vizinhas. Uma linha morta falha naquela tentativa — um pool fornecido nunca recorre ao seu próprio endereço.
+- **Com um pool:** passe `--pool <file>` (ou defina `ONOMEO_PROXIES`) e toda requisição passa por uma saída dessa lista; o rail rotaciona uma saída por conta e tenta novamente uma saída que morre nas vizinhas. Uma linha morta faz aquela tentativa falhar — um pool fornecido nunca recorre ao seu próprio endereço.
 - **Sem um pool:** a CLI imprime `running WITHOUT a proxy (direct)` e conecta diretamente. Cadastro, cunhagem de chave e gate de chat permanecem inalterados — só muda de onde os pacotes saem.
 - `--screen` testa as saídas que você tem contra `https://onomeo.com/api/info` antes de uma execução.
 
@@ -213,7 +213,7 @@ node src/cli.js --help
 | Caminho | Conteúdo |
 | --- | --- |
 | `keys.txt` | uma chave verificada ao vivo por linha (`sk-onomeo-…`) — ignorado pelo git |
-| `accounts.json` | e-mail / id da caixa de entrada Mailtrap / chave (mascarada) / saída / resultados das sondagens — ignorado pelo git |
+| `accounts.json` | e-mail / id da caixa de entrada do Mailtrap / chave (mascarada) / saída / resultados das sondagens — ignorado pelo git |
 | `proxies.txt` | suas saídas, uma por linha — ignorado pelo git |
 
 ## 🔌 Conectar ao 9Router
@@ -242,7 +242,7 @@ Padrões: `--prefix onomeo`, `--base-url https://onomeo.com/v1`, `--model deepse
 | --- | --- |
 | 🏢 Provedor | **Onomeo** — [onomeo.com](https://onomeo.com) |
 | 🎁 O que o provedor dá | uma conta por chave — código de e-mail atrás do Turnstile, toda chave verificada por chat |
-| 🔑 O que uma chave te dá | uma chave de API limitada à sua própria conta: os 28 ids de modelos no endpoint abaixo, nos limites do seu plano. A cota fica na **conta**, que é exatamente por que esta ferramenta cria uma conta por chave |
+| 🔑 O que uma chave te dá | uma chave de API limitada à sua própria conta: os 28 ids de modelos no endpoint abaixo, nos limites do seu plano. A cota fica na **conta**, e é exatamente por isso que esta ferramenta cria uma conta por chave |
 | 🌐 Formato da API | compatível com OpenAI: `POST https://onomeo.com/v1/chat/completions` |
 | 🔒 Seus dados | apenas onomeo.com e o backend de caixa de entrada que você configurar são contatados; as chaves ficam na sua máquina |
 
