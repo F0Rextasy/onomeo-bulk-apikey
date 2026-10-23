@@ -47,6 +47,7 @@ const { Mailtrap } = require('./vendor/mailtrap.js');
 const IS_SRC = path.basename(__dirname) === 'src';
 const ROOT = IS_SRC ? path.resolve(__dirname, '..') : __dirname;
 const KEYS_FILE = path.join(ROOT, 'keys.txt');
+const DEAD_FILE = path.join(ROOT, 'keys-dead.txt');
 const ACCOUNTS_FILE = path.join(ROOT, 'accounts.json');
 
 const BASE = 'https://onomeo.com';
@@ -77,8 +78,7 @@ const has = (name) => argv.includes(`--${name}`);
 if (has('help') || has('h')) {
   console.log(`onomeo-bulk-apikey — mint Onomeo accounts, one API key each, verified by a live chat call.
 
-  node src/cli.js --count 3 --token-cmd "<solver>"   mint, chat-200 gate per key
-  node src/cli.js --count 1 --manual                 paste the Turnstile token by hand
+  node src/cli.js --count 3                          mint (Turnstile solved automatically)
   node src/cli.js --verify-only                      re-check every key in keys.txt
   node src/cli.js --screen                           which exits carry the API
   node src/cli.js --help
@@ -87,18 +87,20 @@ if (has('help') || has('h')) {
   --verify-only      re-verify keys.txt, no minting
   --screen           probe each pool exit against ${BASE}/api/info
   --pool <file>      proxy list, one exit per line (env ONOMEO_PROXIES)         [optional]
-  --token <tok>      one captured Turnstile token (single account — spent once; env ONOMEO_TURNSTILE)
-  --token-cmd <cmd>  command that prints a fresh Turnstile token on stdout
-  --manual           paste the token when prompted
+  --auto             solve the Turnstile with the embedded solver (default)
+  --no-auto          disable the embedded solver
+  --dry              resolve the plan, write nothing (no network, no files)
   --mailtrap-token <t>  Mailtrap API token (env ONOMEO_MAILTRAP_TOKEN)
   --mt-folder <name> Mailtrap folder the inboxes live in                    [onomeo]
   --model <id>       model for the chat gate                             [deepseek-v4-flash]
   --tries N          attempts per account, one exit each                            [2]
 
 The Cloudflare Turnstile widget is solved on the SAME exit that spends the
-token, so a solver run must use that exit (ONOMEO_URL / ONOMEO_SITEKEY are
-exported to --token-cmd). Requests go through the pool when one is given;
-without a pool the CLI connects directly.`);
+token. By default (--auto) the bundled src/solver.js does it over the account's
+pinned exit — one command, nothing else to run. Advanced solver wiring is
+described in ADVANCED.md. If Chrome is not found, install it once or point
+CHROME_PATH at it. Requests go through the pool when one is given; without a
+pool the CLI connects directly.`);
   process.exit(0);
 }
 
@@ -113,6 +115,13 @@ const TOKEN_CMD = arg('token-cmd', null);
 const MANUAL = has('manual');
 const VERIFY_ONLY = has('verify-only');
 const SCREEN = has('screen');
+const AUTO = !has('no-auto'); // the embedded solver is the default path (one command)
+const DRY = has('dry'); // resolve the plan, write nothing, send nothing
+/** Lazy require: a checkout without src/solver.js still runs off --token / --token-cmd. */
+let _solver = null;
+const solver = () => (_solver && _solver.solveCaptcha ? _solver : (_solver = require('./solver.js')));
+/** The exit as a proxy string for the solver ('direct' → null = DIRECT). */
+const exitProxy = (exit) => (isDirect(exit) ? null : exit.raw);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.log(`[${new Date().toISOString().slice(11, 19)}]`, ...a);
@@ -246,7 +255,8 @@ const rl = () => readline.createInterface({ input: process.stdin, output: proces
  * token). The token is single-use, which is why `--token` only serves one
  * account and a multi-account run needs `--token-cmd`.
  */
-async function turnstileToken() {
+/** One Turnstile token for the e-mail/code call. Order: --token → --token-cmd → --auto. */
+async function turnstileToken(exit) {
   if (TOKEN) return TOKEN.includes(':') ? TOKEN.split(':').pop() : TOKEN;
   if (TOKEN_CMD) {
     const r = spawnSync(TOKEN_CMD, {
@@ -263,8 +273,12 @@ async function turnstileToken() {
     const line = out.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).pop() || '';
     const m = line.match(/\d\.[A-Za-z0-9._-]{63,}$/) || out.match(/[A-Za-z0-9_.-]{40,}/) || out.match(/[A-Za-z0-9_-]{40,}/);
     const tok = m ? m[0] : '';
-    if (!tok) throw new Error(`--token-cmd produced no token (status ${r.status}): ${String(r.stderr || '').slice(0, 160)}`);
+    if (!tok) throw new Error(`an external solver produced no token (status ${r.status}): ${String(r.stderr || '').slice(0, 160)} — advanced solver flags: see ADVANCED.md`);
     return tok;
+  }
+  if (AUTO) {
+    const r = await solver().solveCaptcha({ type: 'turnstile', sitekey: SITEKEY, url: LOGIN_URL, proxy: exitProxy(exit) });
+    if (r && r.token) return r.token;
   }
   if (MANUAL) {
     const iface = rl();
@@ -280,7 +294,7 @@ async function turnstileToken() {
     if (!answer) throw new Error('no token pasted');
     return answer;
   }
-  throw new Error('no Turnstile source: pass --token <tok>, --token-cmd <cmd>, or --manual');
+  throw new Error('no Turnstile source: the embedded solver (--auto) gave nothing — advanced solver flags: see ADVANCED.md');
 }
 
 // ------------------------------------------------------------------- flows
@@ -313,7 +327,7 @@ function saveAccounts(list) {
 async function signUp(exit, index) {
   const mt = new Mailtrap({ proxy: exit, token: MT_TOKEN, folder: MT_FOLDER, log: (m) => log(`    ${m}`) });
   const box = await mt.createAccount();
-  const token = await turnstileToken();
+  const token = await turnstileToken(exit);
   const send = await ask(exit, `${BASE}/api/auth/email/code`, {
     method: 'POST',
     body: { email: box.address, lang: 'en', turnstile: token },
@@ -382,6 +396,11 @@ async function chatGate(exit, key, model = MODEL) {
 async function mint() {
   exits = loadExits();
   if (SCREEN) return void (await screen(exits));
+  if (DRY) {
+    console.log('dry run — nothing is written and no request is sent.');
+    console.log(`  count ${COUNT} · exits ${exits.length} · model ${MODEL} · solver ${AUTO ? 'embedded src/solver.js (--auto)' : 'off (--no-auto)'}`);
+    return;
+  }
   const accounts = loadAccounts();
   log(`onomeo · ${COUNT} key(s) · exits ${exits.length} · keys land in ${KEYS_FILE}`);
   let made = 0;
@@ -422,6 +441,7 @@ async function mint() {
     if (!ok) log(`account ${i + 1}: ${lastErr ? String(lastErr.message).slice(0, 160) : 'no key'}`);
   }
   log(`done — ${made}/${COUNT} key(s) written to ${KEYS_FILE}`);
+  console.log(`__MINT_SUMMARY__ ${JSON.stringify({ requested: COUNT, live: made, keysFile: KEYS_FILE, deadFile: DEAD_FILE })}`);
 }
 
 async function verifyOnly() {
@@ -432,6 +452,7 @@ async function verifyOnly() {
     process.exit(0);
   }
   let live = 0;
+  const dead = [];
   // The pool flaps: keep walking distinct exits until one answers, because a
   // transport error is not a provider verdict.
   const attempts = Math.max(TRIES, Math.min(exits.length, 6));
@@ -447,13 +468,16 @@ async function verifyOnly() {
       }
     }
     if (!g) {
+      dead.push({ key: keys[i], why: String(lastErr && lastErr.message).slice(0, 60) });
       console.log(`  ✘ ${keys[i].slice(0, 14)}… ${String(lastErr && lastErr.message).slice(0, 90)} (${attempts} exits tried)`);
       continue;
     }
     if (g.ok) live++;
+    else dead.push({ key: keys[i], why: `chat=${g.status}` });
     console.log(`  ${g.ok ? '✔' : '✘'} ${keys[i].slice(0, 14)}… chat=${g.status}${g.ok ? ` ${g.sample}` : ''}`);
   }
-  console.log(`verify: ${live}/${keys.length} keys live`);
+  fs.writeFileSync(DEAD_FILE, dead.map((d) => `${d.key}\t# ${d.why}`).join('\n') + (dead.length ? '\n' : ''));
+  console.log(`verify: ${live}/${keys.length} keys live — the ${dead.length} dead one(s) are in ${DEAD_FILE}`);
   process.exit(live === keys.length ? 0 : 1);
 }
 
