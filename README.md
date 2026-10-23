@@ -102,6 +102,8 @@ print(c.chat.completions.create(model="deepseek-v4-flash",
 ```bash
 # clone or fork this repository, then:
 cd onomeo-bulk-apikey
+npm install                       # once: pulls puppeteer-core, the embedded solver's browser engine
+# the solver needs a real Chrome: winget install --id Google.Chrome (or set CHROME_PATH)
 
 # 1) your proxy list, one per line (http://… or socks5://…) — optional: without it the tool runs direct
 printf 'http://127.0.0.1:8080\n' > proxies.txt
