@@ -93,7 +93,7 @@ if (has('help') || has('h')) {
   --mailtrap-token <t>  Mailtrap API token (env ONOMEO_MAILTRAP_TOKEN)
   --mt-folder <name> Mailtrap folder the inboxes live in                    [onomeo]
   --model <id>       model for the chat gate                             [deepseek-v4-flash]
-  --tries N          attempts per account, one exit each                            [2]
+  --exits N          attempts per account, one exit each                            [6]
 
 The Cloudflare Turnstile widget is solved on the SAME exit that spends the
 token. By default (--auto) the bundled src/solver.js does it over the account's
@@ -105,7 +105,7 @@ pool the CLI connects directly.`);
 }
 
 const COUNT = Math.max(1, parseInt(arg('count', '1'), 10) || 1);
-const TRIES = Math.max(1, parseInt(arg('tries', '2'), 10) || 2);
+const EXITS = Math.max(1, parseInt(arg('exits', '6'), 10) || 6);
 const MODEL = arg('model', process.env.ONOMEO_MODEL || 'deepseek-v4-flash');
 const MT_TOKEN = arg('mailtrap-token', process.env.ONOMEO_MAILTRAP_TOKEN || null);
 const MT_FOLDER = arg('mt-folder', 'onomeo');
@@ -227,6 +227,12 @@ function loadExits() {
   }
   return [DIRECT_EXIT];
 }
+/** A dead exit, not a panel verdict — the flow rotates to the next candidate. */
+const isExitError = (e) =>
+  /proxy connect failed|proxy CONNECT refused|proxy timeout|connect timeout|connect failed|ETIMEDOUT|ECONNREFUSED|ECONNRESET|ECONNABORTED|EPIPE|ENETUNREACH|EHOSTUNREACH|EAI_AGAIN|socket hang up|secureConnect|TLS|handshake/i.test(
+    String((e && e.message) || e),
+  );
+
 
 async function screen(exits) {
   let live = 0;
@@ -402,13 +408,17 @@ async function mint() {
     return;
   }
   const accounts = loadAccounts();
-  log(`onomeo · ${COUNT} key(s) · exits ${exits.length} · keys land in ${KEYS_FILE}`);
+  const routes = isDirect(exits[0]) ? 1 : EXITS;
+  log(`onomeo · ${COUNT} key(s) · exits ${exits.length} · up to ${routes} per account · keys land in ${KEYS_FILE}`);
   let made = 0;
+  let transportDead = 0;
   for (let i = 0; i < COUNT; i++) {
     let lastErr = null;
     let ok = false;
-    for (let t = 0; t < TRIES; t++) {
-      const exit = exits[(i + t) % exits.length];
+    let lastWasExit = false;
+    for (let a = 0; a < routes; a++) {
+      const exit = exits[(i + a) % exits.length];
+      lastWasExit = false;
       try {
         const rec = await signUp(exit, i + 1);
         const live = await verifyKey(exit, rec.key);
@@ -435,10 +445,18 @@ async function mint() {
         break;
       } catch (e) {
         lastErr = e;
-        if (t < TRIES - 1) await sleep(2000);
+        lastWasExit = isExitError(e);
+        if (lastWasExit) log(`account ${i + 1}: exit ${a + 1}/${routes} ${label(exit)} dead (${String(e.message).slice(0, 70)}) → next exit`);
+        if (a < routes - 1) await sleep(2000);
       }
     }
+    if (!ok && lastWasExit) transportDead++;
     if (!ok) log(`account ${i + 1}: ${lastErr ? String(lastErr.message).slice(0, 160) : 'no key'}`);
+  }
+  if (!made && transportDead === COUNT) {
+    const route = isDirect(exits[0]) ? 'direct mode (no proxy list)' : `${exits.length}-exit pool`;
+    console.error(`[fatal] no usable route — ${COUNT} account(s) × ${routes} candidate(s) over ${route}: every attempt died at the transport layer.`);
+    process.exit(1);
   }
   log(`done — ${made}/${COUNT} key(s) written to ${KEYS_FILE}`);
   console.log(`__MINT_SUMMARY__ ${JSON.stringify({ requested: COUNT, live: made, keysFile: KEYS_FILE, deadFile: DEAD_FILE })}`);
@@ -455,7 +473,7 @@ async function verifyOnly() {
   const dead = [];
   // The pool flaps: keep walking distinct exits until one answers, because a
   // transport error is not a provider verdict.
-  const attempts = Math.max(TRIES, Math.min(exits.length, 6));
+  const attempts = Math.max(EXITS, Math.min(exits.length, 6));
   for (let i = 0; i < keys.length; i++) {
     let g = null;
     let lastErr = null;

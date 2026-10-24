@@ -604,5 +604,6 @@ module.exports = {
   attachProxyAuth,
   usableInBrowser,
   isLocalHost,
+  isDirect,
   ProxyAgent,
 };
