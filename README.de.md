@@ -196,7 +196,7 @@ node src/cli.js --help
 | `--mailtrap-token <t>` | Mailtrap-API-Token |
 | `--mt-folder <name>` | Mailtrap-Ordner für die Postfächer (Standard `onomeo`) |
 | `--model <id>` | Modell für das Chat-Gate |
-| `--tries N` | Versuche pro Konto, je ein Exit (Standard 2) |
+| `--exits N` | Versuche pro Konto, je ein Exit (Standard 6) |
 | `--verify-only` · `--screen` · `--help` | erneut verifizieren · Exits prüfen · dieser Text |
 
 ## 🛰️ Hinter einem Proxy

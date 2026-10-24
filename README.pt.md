@@ -195,7 +195,7 @@ node src/cli.js --help
 | `--mailtrap-token <t>` | token de API do Mailtrap |
 | `--mt-folder <name>` | pasta do Mailtrap para as caixas de entrada (padrão `onomeo`) |
 | `--model <id>` | modelo para o gate de chat |
-| `--tries N` | tentativas por conta, uma saída cada (padrão 2) |
+| `--exits N` | tentativas por conta, uma saída cada (padrão 6) |
 | `--verify-only` · `--screen` · `--help` | re-verificar · sondar saídas · este texto |
 
 ## 🛰️ Atrás de um proxy

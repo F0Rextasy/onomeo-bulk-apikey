@@ -195,7 +195,7 @@ node src/cli.js --help
 | `--mailtrap-token <t>` | Mailtrap API token'ı |
 | `--mt-folder <name>` | gelen kutuları için Mailtrap klasörü (varsayılan `onomeo`) |
 | `--model <id>` | sohbet kapısı için model |
-| `--tries N` | hesap başına deneme, her biri bir çıkış (varsayılan 2) |
+| `--exits N` | hesap başına deneme, her biri bir çıkış (varsayılan 6) |
 | `--verify-only` · `--screen` · `--help` | yeniden doğrula · çıkışları yokla · bu metin |
 
 ## 🛰️ Proxy arkasında

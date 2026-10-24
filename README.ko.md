@@ -195,7 +195,7 @@ node src/cli.js --help
 | `--mailtrap-token <t>` | Mailtrap API 토큰 |
 | `--mt-folder <name>` | 받은편지함용 Mailtrap 폴더 (기본 `onomeo`) |
 | `--model <id>` | 채팅 게이트용 모델 |
-| `--tries N` | 계정당 시도 횟수, 각각 다른 출구 (기본 2) |
+| `--exits N` | 계정당 시도 횟수, 각각 다른 출구 (기본 6) |
 | `--verify-only` · `--screen` · `--help` | 재검증 · 출구 프로브 · 이 텍스트 |
 
 ## 🛰️ 프록시 뒤에서

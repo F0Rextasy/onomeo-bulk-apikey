@@ -195,7 +195,7 @@ node src/cli.js --help
 | `--mailtrap-token <t>` | Mailtrap API トークン |
 | `--mt-folder <name>` | 受信箱用の Mailtrap フォルダ（デフォルト `onomeo`） |
 | `--model <id>` | チャットゲート用のモデル |
-| `--tries N` | アカウントあたりの試行回数、1 回につき 1 出口（デフォルト 2） |
+| `--exits N` | アカウントあたりの試行回数、1 回につき 1 出口（デフォルト 6） |
 | `--verify-only` · `--screen` · `--help` | 再検証 · 出口のプローブ · このテキスト |
 
 ## 🛰️ プロキシの背後で

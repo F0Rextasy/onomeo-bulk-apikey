@@ -195,7 +195,7 @@ node src/cli.js --help
 | `--mailtrap-token <t>` | jeton API Mailtrap |
 | `--mt-folder <name>` | dossier Mailtrap pour les boîtes de réception (défaut `onomeo`) |
 | `--model <id>` | modèle pour la barrière de chat |
-| `--tries N` | tentatives par compte, une sortie chacune (défaut 2) |
+| `--exits N` | tentatives par compte, une sortie chacune (défaut 6) |
 | `--verify-only` · `--screen` · `--help` | re-vérifier · tester les sorties · ce texte |
 
 ## 🛰️ Derrière un proxy

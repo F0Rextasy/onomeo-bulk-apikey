@@ -196,7 +196,7 @@ node src/cli.js --help
 | `--mailtrap-token <t>` | Mailtrap API token |
 | `--mt-folder <name>` | Mailtrap folder for the inboxes (default `onomeo`) |
 | `--model <id>` | model for the chat gate |
-| `--tries N` | attempts per account, one exit each (default 2) |
+| `--exits N` | attempts per account, one exit each (default 6) |
 | `--verify-only` · `--screen` · `--help` | re-verify · probe exits · this text |
 
 ## 🛰️ Behind a proxy

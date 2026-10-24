@@ -194,7 +194,7 @@ node src/cli.js --help
 | `--mailtrap-token <t>` | Mailtrap API token |
 | `--mt-folder <name>` | 用于收件箱的 Mailtrap 文件夹（默认 `onomeo`） |
 | `--model <id>` | 用于聊天关卡的模型 |
-| `--tries N` | 每账户的尝试次数，每次一个出口（默认 2） |
+| `--exits N` | 每账户的尝试次数，每次一个出口（默认 6） |
 | `--verify-only` · `--screen` · `--help` | 重新验证 · 探测出口 · 本说明 |
 
 ## 🛰️ 在代理之后
